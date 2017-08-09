@@ -57,6 +57,8 @@ def nfvswitch_config_path():
 def vpp_config_path():
     return "/etc/vpp/startup.conf"
 
+def contrail_vrouter_config_path():
+    return "/etc/contrail/contrail-vrouter-agent.conf"
 
 def route_config_path(name):
     return "/etc/sysconfig/network-scripts/route-%s" % name
@@ -121,6 +123,7 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         self.ib_interface_data = {}
         self.linuxteam_data = {}
         self.vpp_interface_data = {}
+        self.contrail_vrouter_interface_data = {}
         self.member_names = {}
         self.renamed_interfaces = {}
         self.bond_primary_ifaces = {}
@@ -681,6 +684,23 @@ class IfcfgNetConfig(os_net_config.NetConfig):
                     % (vpp_interface.name, vpp_interface.pci_dev))
         self.vpp_interface_data[vpp_interface.name] = vpp_interface
 
+    def add_contrail_vrouter_interface(self, contrail_vrouter_interface):
+        """Add a ContraiVrouterKmod object to the net config object
+
+        :param contrail_vrouter_interface: 
+           The ContrailVrouterInterface object to add
+        """
+        if not contrail_vrouter_interface.dpdk:
+            utils.contrail_insert_vrouter(contrail_vrouter_interface)
+        logger.info('adding contrail_vrouter interface: %s'
+                    % (contrail_vrouter_interface.name))
+        data = self._add_common(contrail_vrouter_interface)
+        self.contrail_vrouter_interface_data[contrail_vrouter_interface.name] \
+            = data
+        if contrail_vrouter_interface.routes:
+            self._add_routes(contrail_vrouter_interface.name,
+                             contrail_vrouter_interface.routes)
+
     def generate_ivs_config(self, ivs_uplinks, ivs_interfaces):
         """Generate configuration content for ivs."""
 
@@ -746,6 +766,7 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         restart_linux_bonds = []
         restart_linux_teams = []
         restart_vpp = False
+        restart_contrail_vrouter = False
         update_files = {}
         all_file_names = []
         ivs_uplinks = []  # ivs physical uplinks
@@ -755,6 +776,8 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         stop_dhclient_interfaces = []
         ovs_needs_restart = False
         vpp_interfaces = self.vpp_interface_data.values()
+        contrail_vrouter_interfaces = \
+            self.contrail_vrouter_interface_data.values()
 
         for interface_name, iface_data in self.interface_data.items():
             route_data = self.route_data.get(interface_name, '')
@@ -963,6 +986,32 @@ class IfcfgNetConfig(os_net_config.NetConfig):
                 logger.info('No changes required for InfiniBand iface: %s' %
                             interface_name)
 
+        # Contrail vRouter interfaces are handled similarly to Ethernet
+        # interfaces
+        for interface_name, iface_data in \
+            self.contrail_vrouter_interface_data.items():
+            route_data = self.route_data.get(interface_name, '')
+            route6_data = self.route6_data.get(interface_name, '')
+            interface_path = self.root_dir + ifcfg_config_path(interface_name)
+            route_path = self.root_dir + route_config_path(interface_name)
+            route6_path = self.root_dir + route6_config_path(interface_name)
+            all_file_names.append(interface_path)
+            all_file_names.append(route_path)
+            all_file_names.append(route6_path)
+            all_file_names.append(route6_path)
+            if (utils.diff(interface_path, iface_data) or
+                    utils.diff(route_path, route_data) or
+                    utils.diff(route6_path, route6_data)):
+                restart_interfaces.append(interface_name)
+                restart_interfaces.extend(self.child_members(interface_name))
+                update_files[interface_path] = iface_data
+                update_files[route_path] = route_data
+                update_files[route6_path] = route6_data
+            else:
+                logger.info('No changes required for vRouter iface: %s' %
+                            interface_name)
+
+
         if self.vpp_interface_data:
             vpp_path = self.root_dir + vpp_config_path()
             vpp_config = utils.generate_vpp_config(vpp_path, vpp_interfaces)
@@ -971,6 +1020,20 @@ class IfcfgNetConfig(os_net_config.NetConfig):
                 update_files[vpp_path] = vpp_config
             else:
                 logger.info('No changes required for VPP')
+
+        '''
+        if self.contrail_vrouter_interface_data:
+            contrail_vrouter_path = self.root_dir + \
+                                    contrail_vrouter_config_path()
+            contrail_vrouter_config = \
+                     utils.generate_contrail_vrouter_config(vpp_path,
+                                                      vpp_interfaces)
+            if utils.diff(contrail_vrouter_path, contrail_vrouter_config):
+                restart_contrail = True
+                update_files[contrail_vrouter_path] = contrail_vrouter_config
+            else:
+                logger.info('No changes required for Contrail')
+        '''
 
         if cleanup:
             for ifcfg_file in glob.iglob(cleanup_pattern()):
@@ -1000,6 +1063,9 @@ class IfcfgNetConfig(os_net_config.NetConfig):
 
             for vpp_interface in vpp_interfaces:
                 self.ifdown(vpp_interface.name)
+
+            for contrail_vrouter_interface in contrail_vrouter_interfaces:
+                self.ifdown(contrail_vrouter_interface)
 
             for oldname, newname in self.renamed_interfaces.items():
                 self.ifrename(oldname, newname)
@@ -1089,6 +1155,16 @@ class IfcfgNetConfig(os_net_config.NetConfig):
                 if self.vpp_interface_data:
                     logger.info('Updating VPP mapping')
                     utils.update_vpp_mapping(vpp_interfaces)
+
+                if restart_contrail_vrouter:
+                    logger.info('Restarting Contrail Vrouter')
+                    utils.restart_contrail_vrouter(contrail_vrouter_interfaces)
+                '''
+                if self.contrail_vrouter_interface_data:
+                    logger.info('Updating Contrail Vrouter mapping')
+                    utils.update_contrail_vrouter_mapping(
+                                                   contrail_vrouter_interfaces)
+                '''
 
             if self.errors:
                 message = 'Failure(s) occurred when applying configuration'

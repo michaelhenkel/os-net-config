@@ -102,6 +102,8 @@ class NetConfig(object):
             self.add_ovs_dpdk_bond(obj)
         elif isinstance(obj, objects.VppInterface):
             self.add_vpp_interface(obj)
+        elif isinstance(obj, objects.ContrailVrouterInterface):
+            self.add_contrail_vrouter_interface(obj)
 
     def add_interface(self, interface):
         """Add an Interface object to the net config object.
@@ -214,6 +216,14 @@ class NetConfig(object):
         :param vpp_interface: The VppInterface object to add.
         """
         raise NotImplementedError("add_vpp_interface is not implemented.")
+
+    def add_contrail_vrouter_interface(self, contrail_vrouter_interface):
+        """Add a ContrailVrouterInterface object to the net config object.
+
+        :param contrail_vrouter_interface:
+            The ContrailVrouterInterface object to add.
+        """
+        raise NotImplementedError("add_contrail_vrouter_interface is not implemented.")
 
     def apply(self, cleanup=False):
         """Apply the network configuration.

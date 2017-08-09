@@ -75,6 +75,8 @@ def object_from_json(json):
         return OvsDpdkBond.from_json(json)
     elif obj_type == "vpp_interface":
         return VppInterface.from_json(json)
+    elif obj_type == "contrail_vrouter_interface":
+        return ContrailVrouterInterface.from_json(json)
 
 
 def _get_required_field(json, name, object_name):
@@ -1181,3 +1183,50 @@ class VppInterface(_BaseOpts):
         opts = _BaseOpts.base_opts_from_json(json)
         return VppInterface(name, *opts, uio_driver=uio_driver,
                             options=options)
+
+class ContrailVrouterInterface(_BaseOpts):
+    """Base class for Contrail Interface.
+
+    Contrail Vrouter is the interface transporting traffic for the Contrail
+    SDN Controller.   
+
+    The following parameters can be specified in addition to base Interface:
+      - dpdk: Switches from kernel mode to dpdk
+      - bind_int: Interface vhost0 is bound to
+      - options: Interface options
+    """
+    def __init__(self, name, use_dhcp=False, use_dhcpv6=False, addresses=None,
+                 routes=None, mtu=None, primary=False, nic_mapping=None,
+                 persist_mapping=False, defroute=True, dhclient_args=None,
+                 dns_servers=None, nm_controlled=False, dpdk=False,
+                 bind_int=None, options=None):
+        addresses = addresses or []
+
+        super(ContrailVrouterInterface, self).__init__(name, use_dhcp,
+                                           use_dhcpv6,
+                                           addresses, routes, mtu, primary,
+                                           nic_mapping, persist_mapping,
+                                           defroute, dhclient_args,
+                                           dns_servers, nm_controlled)
+        mapped_nic_names = _mapped_nics(nic_mapping)
+        if bind_int in mapped_nic_names:
+            self.bind_int = mapped_nic_names[bind_int]
+        else:
+            self.bind_int = bind_int
+        self.dpdk = dpdk
+        self.options = options
+        # pci_dev contains pci address for the interface, it will be populated
+        # when interface is added to config object. It will be determined
+        # either through ethtool or by looking up the dpdk mapping file.
+
+    @staticmethod
+    def from_json(json):
+        name = _get_required_field(json, 'name', 'ContrailVrouterInterface')
+        bind_int = _get_required_field(json, 'bind_int',
+                                       'ContrailVrouterInterface')
+        dpdk = json.get('dpdk', False)
+        options = json.get('options', '')
+
+        opts = _BaseOpts.base_opts_from_json(json)
+        return ContrailVrouterInterface(name, *opts,bind_int=bind_int,
+                                        dpdk=dpdk,options=options)
