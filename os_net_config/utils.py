@@ -335,39 +335,6 @@ def restart_contrail(contrail_interfaces):
     logger.info('Restarting Contrail vRouter')
     processutils.execute('systemctl', 'restart', 'supervisor-vrouter-agent')
 
-def contrail_pkt_setup():
-    for pkt in ['pkt1','pkt2','pkt3']:
-        if os.path.exists('/sys/class/net/'+pkt+'/queues/rx-0/rps_cpus'):
-            queues = os.listdir('/sys/class/net/'+pkt+'/queues')
-            for queue in queues:
-                if 'rx-' in queue:
-                    rx_index = int(queue.split('-')[1])
-                    r = rx_index%32
-                    s = rx_index/32
-                    mask = 1<<r
-                    stra = '{:x}'.format(mask)
-                    if s > 0:
-                        for i in range(0,s):
-                            stra += ',00000000'
-                    f = open('/sys/class/net/'\
-                             +pkt+'/queues/'+queue+'/rps_cpus', 'w')
-                    f.write(stra)
-                    f.close()
-        processutils.execute('ifconfig', pkt, 'up')
-
-def contrail_insert_vrouter(contrail_interface):
-    processutils.execute('modprobe','vrouter')
-    contrail_pkt_setup()
-    mac_address = interface_mac(contrail_interface.bind_int)
-    processutils.execute('vif','--create',contrail_interface.name,'--mac',
-                         mac_address)
-    processutils.execute('vif','--add',contrail_interface.bind_int,'--mac',
-                         mac_address,
-                         '--vrf','0','--vhost-phys','--type','physical')
-    processutils.execute('vif','--add','vhost0','--mac',mac_address,
-                         '--vrf','0','--type','vhost','--xconnect',
-                         contrail_interface.bind_int)
-
 def _get_vpp_interface_name(pci_addr):
     """Get VPP interface name from a given PCI address
 

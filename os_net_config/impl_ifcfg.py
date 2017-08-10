@@ -1110,10 +1110,6 @@ class IfcfgNetConfig(os_net_config.NetConfig):
                 if not self.noop:
                     stop_dhclient_process(interface)
 
-            if contrail_vrouter_interface:
-                if not self.contrail_vrouter_interface.dpdk:
-                    utils.contrail_insert_vrouter(self.contrail_vrouter_interface)
-
             for interface in restart_interfaces:
                 self.ifup(interface)
 
