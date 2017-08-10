@@ -64,6 +64,10 @@ def contrail_vrouter_config_path():
     return "/etc/contrail/contrail-vrouter-agent.conf"
 
 
+def contrail_vrouter_config_path():
+    return "/etc/contrail/contrail-vrouter-agent.conf"
+
+
 def route_config_path(name):
     return "/etc/sysconfig/network-scripts/route-%s" % name
 

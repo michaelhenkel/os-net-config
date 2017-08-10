@@ -710,7 +710,6 @@ definitions:
           - name
         additionalProperties: False
 
-
     linux_bridge:
         type: object
         properties:
