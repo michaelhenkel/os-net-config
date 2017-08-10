@@ -693,14 +693,15 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         logger.info('adding contrail_vrouter interface: %s'
                     % (contrail_vrouter_interface.name))
         data = self._add_common(contrail_vrouter_interface)
+        data += "BIND_INT=" + contrail_vrouter_interface.bind_int + "\n"
+        if contrail_vrouter_interface.dpdk:
+            data += "VROUTER_DPDK=yes\n"
         self.contrail_vrouter_interface = contrail_vrouter_interface
         self.contrail_vrouter_interface_data[contrail_vrouter_interface.name] \
             = data
         if contrail_vrouter_interface.routes:
             self._add_routes(contrail_vrouter_interface.name,
                              contrail_vrouter_interface.routes)
-        #if not contrail_vrouter_interface.dpdk:
-        #    utils.contrail_insert_vrouter(contrail_vrouter_interface)
 
     def generate_ivs_config(self, ivs_uplinks, ivs_interfaces):
         """Generate configuration content for ivs."""
