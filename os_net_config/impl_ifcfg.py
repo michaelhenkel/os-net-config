@@ -60,6 +60,10 @@ def vpp_config_path():
 def contrail_vrouter_config_path():
     return "/etc/contrail/contrail-vrouter-agent.conf"
 
+def contrail_vrouter_config_path():
+    return "/etc/contrail/contrail-vrouter-agent.conf"
+
+
 def route_config_path(name):
     return "/etc/sysconfig/network-scripts/route-%s" % name
 
@@ -687,7 +691,7 @@ class IfcfgNetConfig(os_net_config.NetConfig):
     def add_contrail_vrouter_interface(self, contrail_vrouter_interface):
         """Add a ContraiVrouterKmod object to the net config object
 
-        :param contrail_vrouter_interface: 
+        :param contrail_vrouter_interface:
            The ContrailVrouterInterface object to add
         """
         logger.info('adding contrail_vrouter interface: %s'
@@ -1013,7 +1017,6 @@ class IfcfgNetConfig(os_net_config.NetConfig):
                 logger.info('No changes required for vRouter iface: %s' %
                             interface_name)
 
-
         if self.vpp_interface_data:
             vpp_path = self.root_dir + vpp_config_path()
             vpp_config = utils.generate_vpp_config(vpp_path, vpp_interfaces)
@@ -1162,12 +1165,6 @@ class IfcfgNetConfig(os_net_config.NetConfig):
                 if restart_contrail_vrouter:
                     logger.info('Restarting Contrail Vrouter')
                     utils.restart_contrail_vrouter(contrail_vrouter_interfaces)
-                '''
-                if self.contrail_vrouter_interface_data:
-                    logger.info('Updating Contrail Vrouter mapping')
-                    utils.update_contrail_vrouter_mapping(
-                                                   contrail_vrouter_interfaces)
-                '''
 
             if self.errors:
                 message = 'Failure(s) occurred when applying configuration'

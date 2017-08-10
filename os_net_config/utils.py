@@ -51,6 +51,10 @@ class ContrailVrouterException(ValueError):
     pass
 
 
+class ContrailVrouterException(ValueError):
+    pass
+
+
 def write_config(filename, data):
     with open(filename, 'w') as f:
         f.write(str(data))
@@ -334,6 +338,11 @@ def restart_vpp(vpp_interfaces):
 def restart_contrail(contrail_interfaces):
     logger.info('Restarting Contrail vRouter')
     processutils.execute('systemctl', 'restart', 'supervisor-vrouter-agent')
+
+def restart_contrail(contrail_interfaces):
+    logger.info('Restarting Contrail vRouter')
+    processutils.execute('systemctl', 'restart', 'supervisor-vrouter-agent')
+
 
 def _get_vpp_interface_name(pci_addr):
     """Get VPP interface name from a given PCI address

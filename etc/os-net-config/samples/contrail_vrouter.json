@@ -1,0 +1,10 @@
+{ "network_config": [
+    {
+        "type": "contrail_vrouter_interface",
+        "name": "vhost0",
+        "bind_int": "eth1",
+        "dpdk": true,
+        "mtu": 1500
+    }
+  ]
+}

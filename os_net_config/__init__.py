@@ -223,7 +223,8 @@ class NetConfig(object):
         :param contrail_vrouter_interface:
             The ContrailVrouterInterface object to add.
         """
-        raise NotImplementedError("add_contrail_vrouter_interface is not implemented.")
+        raise NotImplementedError("add_contrail_vrouter_interface \
+                                   is not implemented.")
 
     def apply(self, cleanup=False):
         """Apply the network configuration.

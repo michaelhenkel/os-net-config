@@ -235,3 +235,21 @@ class TestCli(base.TestCase):
         for dev in sanity_devices:
             self.assertIn(dev, stdout_yaml)
         self.assertEqual(stdout_yaml, stdout_json)
+
+    def test_contrail_vrouter_noop_output(self):
+        cvi_yaml = os.path.join(SAMPLE_BASE, 'contrail_vrouter.yaml')
+        cvi_json = os.path.join(SAMPLE_BASE, 'contrail_vrouter.json')
+        stdout_yaml, stderr = self.run_cli('ARG0 --provider=ifcfg --noop '
+                                           '--exit-on-validation-errors '
+                                           '-c %s' % cvi_yaml)
+        self.assertEqual('', stderr)
+        stdout_json, stderr = self.run_cli('ARG0 --provider=ifcfg --noop '
+                                           '--exit-on-validation-errors '
+                                           '-c %s' % cvi_json)
+        self.assertEqual('', stderr)
+        sanity_devices = ['DEVICE=vhost0',
+                          'BIND_INT=eth1',
+                          'VROUTER_DPDK=yes']
+        for dev in sanity_devices:
+            self.assertIn(dev, stdout_yaml)
+        self.assertEqual(stdout_yaml, stdout_json)

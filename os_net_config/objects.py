@@ -1188,7 +1188,7 @@ class ContrailVrouterInterface(_BaseOpts):
     """Base class for Contrail Interface.
 
     Contrail Vrouter is the interface transporting traffic for the Contrail
-    SDN Controller.   
+    SDN Controller.
 
     The following parameters can be specified in addition to base Interface:
       - dpdk: Switches from kernel mode to dpdk
@@ -1203,11 +1203,14 @@ class ContrailVrouterInterface(_BaseOpts):
         addresses = addresses or []
 
         super(ContrailVrouterInterface, self).__init__(name, use_dhcp,
-                                           use_dhcpv6,
-                                           addresses, routes, mtu, primary,
-                                           nic_mapping, persist_mapping,
-                                           defroute, dhclient_args,
-                                           dns_servers, nm_controlled)
+                                                       use_dhcpv6,
+                                                       addresses,
+                                                       routes, mtu, primary,
+                                                       nic_mapping,
+                                                       persist_mapping,
+                                                       defroute, dhclient_args,
+                                                       dns_servers,
+                                                       nm_controlled)
         mapped_nic_names = _mapped_nics(nic_mapping)
         if bind_int in mapped_nic_names:
             self.bind_int = mapped_nic_names[bind_int]
