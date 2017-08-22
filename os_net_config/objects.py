@@ -1237,7 +1237,6 @@ class ContrailVrouterInterface(_BaseOpts):
         else:
             self.bind_int = bind_int
         self.dpdk = dpdk
-        logger.info('contrail_dpdk: %s' % dpdk)
         self.options = options
         # pci_dev contains pci address for the interface, it will be populated
         # when interface is added to config object. It will be determined
