@@ -676,8 +676,6 @@ definitions:
                 enum: ["contrail_vrouter_interface"]
             name:
                 $ref: "#/definitions/string_or_param"
-            dpdk:
-                $ref: "#/definitions/bool_or_param"
             bind_int:
                 $ref: "#/definitions/string_or_param"
             options:

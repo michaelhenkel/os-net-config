@@ -368,6 +368,13 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         if isinstance(base_opt, objects.Interface):
             if base_opt.ethtool_opts:
                 data += "ETHTOOL_OPTS=\"%s\"\n" % base_opt.ethtool_opts
+        if isinstance(base_opt, objects.ContrailVrouterInterface):
+            data += "DEVICETYPE=vhost\n"
+            data += "BIND_INT=" + contrail_vrouter_interface.bind_int + "\n"
+            if contrail_vrouter_interface.dpdk:
+                data += "TYPE=dpdk\n"
+            else:
+                data += "TYPE=kernel_mode\n"
 
         if base_opt.mtu:
             data += "MTU=%i\n" % base_opt.mtu
@@ -698,9 +705,6 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         logger.info('adding contrail_vrouter interface: %s'
                     % (contrail_vrouter_interface.name))
         data = self._add_common(contrail_vrouter_interface)
-        data += "BIND_INT=" + contrail_vrouter_interface.bind_int + "\n"
-        if contrail_vrouter_interface.dpdk:
-            data += "VROUTER_DPDK=yes\n"
         self.contrail_vrouter_interface = contrail_vrouter_interface
         self.contrail_vrouter_interface_data[contrail_vrouter_interface.name] \
             = data
