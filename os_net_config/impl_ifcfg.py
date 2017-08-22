@@ -57,12 +57,6 @@ def nfvswitch_config_path():
 def vpp_config_path():
     return "/etc/vpp/startup.conf"
 
-def contrail_vrouter_config_path():
-    return "/etc/contrail/contrail-vrouter-agent.conf"
-
-def contrail_vrouter_config_path():
-    return "/etc/contrail/contrail-vrouter-agent.conf"
-
 
 def contrail_vrouter_config_path():
     return "/etc/contrail/contrail-vrouter-agent.conf"
@@ -1033,20 +1027,6 @@ class IfcfgNetConfig(os_net_config.NetConfig):
             else:
                 logger.info('No changes required for VPP')
 
-        '''
-        if self.contrail_vrouter_interface_data:
-            contrail_vrouter_path = self.root_dir + \
-                                    contrail_vrouter_config_path()
-            contrail_vrouter_config = \
-                     utils.generate_contrail_vrouter_config(vpp_path,
-                                                      vpp_interfaces)
-            if utils.diff(contrail_vrouter_path, contrail_vrouter_config):
-                restart_contrail = True
-                update_files[contrail_vrouter_path] = contrail_vrouter_config
-            else:
-                logger.info('No changes required for Contrail')
-        '''
-
         if cleanup:
             for ifcfg_file in glob.iglob(cleanup_pattern()):
                 if ifcfg_file not in all_file_names:
@@ -1158,7 +1138,6 @@ class IfcfgNetConfig(os_net_config.NetConfig):
 
             for vlan in restart_vlans:
                 self.ifup(vlan)
-
 
             if not self.noop:
                 if restart_vpp:

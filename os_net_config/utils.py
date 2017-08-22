@@ -47,13 +47,6 @@ class OvsDpdkBindException(ValueError):
 class VppException(ValueError):
     pass
 
-class ContrailVrouterException(ValueError):
-    pass
-
-
-class ContrailVrouterException(ValueError):
-    pass
-
 
 class ContrailVrouterException(ValueError):
     pass
@@ -338,14 +331,6 @@ def restart_vpp(vpp_interfaces):
             processutils.execute('modprobe', 'vfio-pci')
     logger.info('Restarting VPP')
     processutils.execute('systemctl', 'restart', 'vpp')
-
-def restart_contrail(contrail_interfaces):
-    logger.info('Restarting Contrail vRouter')
-    processutils.execute('systemctl', 'restart', 'supervisor-vrouter-agent')
-
-def restart_contrail(contrail_interfaces):
-    logger.info('Restarting Contrail vRouter')
-    processutils.execute('systemctl', 'restart', 'supervisor-vrouter-agent')
 
 
 def restart_contrail(contrail_interfaces):

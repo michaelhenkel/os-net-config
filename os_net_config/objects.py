@@ -1203,6 +1203,7 @@ class VppInterface(_BaseOpts):
         return VppInterface(name, *opts, uio_driver=uio_driver,
                             options=options)
 
+
 class ContrailVrouterInterface(_BaseOpts):
     """Base class for Contrail Interface.
 
@@ -1250,5 +1251,5 @@ class ContrailVrouterInterface(_BaseOpts):
         options = json.get('options', '')
 
         opts = _BaseOpts.base_opts_from_json(json)
-        return ContrailVrouterInterface(name, *opts,bind_int=bind_int,
-                                        dpdk=dpdk,options=options)
+        return ContrailVrouterInterface(name, *opts, bind_int=bind_int,
+                                        dpdk=dpdk, options=options)
