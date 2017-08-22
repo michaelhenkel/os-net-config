@@ -368,8 +368,6 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         if isinstance(base_opt, objects.Interface):
             if base_opt.ethtool_opts:
                 data += "ETHTOOL_OPTS=\"%s\"\n" % base_opt.ethtool_opts
-        #if isinstance(base_opt, objects.ContrailVrouterInterface):
-        #    data += "DEVICETYPE=vhost\n"
         if base_opt.mtu:
             data += "MTU=%i\n" % base_opt.mtu
         if base_opt.use_dhcpv6 or base_opt.v6_addresses():
