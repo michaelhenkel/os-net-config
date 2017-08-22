@@ -4,4 +4,4 @@ network_config:
     name: vhost0
     bind_int: eth1    
     mtu: 1500
-
+    dpdk: true

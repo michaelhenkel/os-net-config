@@ -1218,8 +1218,8 @@ class ContrailVrouterInterface(_BaseOpts):
     def __init__(self, name, use_dhcp=False, use_dhcpv6=False, addresses=None,
                  routes=None, mtu=None, primary=False, nic_mapping=None,
                  persist_mapping=False, defroute=True, dhclient_args=None,
-                 dns_servers=None, nm_controlled=False, dpdk=False,
-                 bind_int=None, options=None):
+                 dns_servers=None, nm_controlled=False, onboot=True,
+                 dpdk=False, bind_int=None, options=None):
         addresses = addresses or []
 
         super(ContrailVrouterInterface, self).__init__(name, use_dhcp,
@@ -1230,13 +1230,14 @@ class ContrailVrouterInterface(_BaseOpts):
                                                        persist_mapping,
                                                        defroute, dhclient_args,
                                                        dns_servers,
-                                                       nm_controlled)
+                                                       nm_controlled, onboot)
         mapped_nic_names = _mapped_nics(nic_mapping)
         if bind_int in mapped_nic_names:
             self.bind_int = mapped_nic_names[bind_int]
         else:
             self.bind_int = bind_int
         self.dpdk = dpdk
+        logger.info('contrail_dpdk: %s' % dpdk)
         self.options = options
         # pci_dev contains pci address for the interface, it will be populated
         # when interface is added to config object. It will be determined

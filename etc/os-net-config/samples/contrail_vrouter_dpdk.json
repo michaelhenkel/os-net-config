@@ -3,7 +3,8 @@
         "type": "contrail_vrouter_interface",
         "name": "vhost0",
         "bind_int": "eth1",
-        "mtu": 1500
+        "mtu": 1500,
+        "dpdk": "true"
     }
   ]
 }

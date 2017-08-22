@@ -200,6 +200,7 @@ def main(argv=sys.argv):
             logger.warning('\n'.join(validation_errors))
 
     for iface_json in iface_array:
+        logger.info("iface_json: %s" % iface_json)
         obj = objects.object_from_json(iface_json)
         provider.add_object(obj)
     files_changed = provider.apply(cleanup=opts.cleanup,
