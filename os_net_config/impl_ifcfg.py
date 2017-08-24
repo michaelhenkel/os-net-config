@@ -125,7 +125,8 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         self.ib_interface_data = {}
         self.linuxteam_data = {}
         self.vpp_interface_data = {}
-        self.contrail_vrouter_interface_data = {}
+        self.contrail_vrouter_data = {}
+        self.contrail_vrouter_dpdk_data = {}
         self.member_names = {}
         self.renamed_interfaces = {}
         self.bond_primary_ifaces = {}
@@ -688,27 +689,53 @@ class IfcfgNetConfig(os_net_config.NetConfig):
                     % (vpp_interface.name, vpp_interface.pci_dev))
         self.vpp_interface_data[vpp_interface.name] = vpp_interface
 
-    def add_contrail_vrouter_interface(self, contrail_vrouter_interface):
+    def add_contrail_vrouter(self, contrail_vrouter):
         """Add a ContraiVrouterKmod object to the net config object
 
-        :param contrail_vrouter_interface:
-           The ContrailVrouterInterface object to add
+        :param contrail_vrouter:
+           The ContrailVrouter object to add
         """
         logger.info('adding contrail_vrouter interface: %s'
-                    % (contrail_vrouter_interface.name))
-        data = self._add_common(contrail_vrouter_interface)
+                    % (contrail_vrouter.name))
+        bind_interface_list = []
+        for bind_int in contrail_vrouter.members:
+            bind_interface_list.append(bind_int.name)
+        bind_interface = ",".join(bind_interface_list)
+        data = self._add_common(contrail_vrouter)
         data += "DEVICETYPE=vhost\n"
-        if contrail_vrouter_interface.dpdk:
-            data += "TYPE=dpdk\n"
-        else:
-            data += "TYPE=kernel_mode\n"
-        data += "BIND_INT=" + contrail_vrouter_interface.bind_int + "\n"
-        self.contrail_vrouter_interface = contrail_vrouter_interface
-        self.contrail_vrouter_interface_data[contrail_vrouter_interface.name] \
+        data += "TYPE=kernel_mode\n"
+        data += "BIND_INT=" + bind_interface + "\n"
+        self.contrail_vrouter = contrail_vrouter
+        self.contrail_vrouter_data[contrail_vrouter.name] \
             = data
-        if contrail_vrouter_interface.routes:
-            self._add_routes(contrail_vrouter_interface.name,
-                             contrail_vrouter_interface.routes)
+        if contrail_vrouter.routes:
+            self._add_routes(contrail_vrouter.name,
+                             contrail_vrouter.routes)
+
+    def add_contrail_vrouter_dpdk(self, contrail_vrouter_dpdk):
+        """Add a ContraiVrouterKmod object to the net config object
+
+        :param contrail_vrouter:
+           The ContrailVrouter object to add
+        """
+        logger.info('adding contrail_vrouter_dpdk interface: %s'
+                    % (contrail_vrouter_dpdk.name))
+        logger.info('contrail dpdk memebers: %s' % 
+                     dir(contrail_vrouter_dpdk.members[0]))
+        bind_interface_list = []
+        for bind_int in contrail_vrouter_dpdk.members:
+            bind_interface_list.append(bind_int.name)
+        bind_interface = ",".join(bind_interface_list)
+        data = self._add_common(contrail_vrouter_dpdk)
+        data += "DEVICETYPE=vhost\n"
+        data += "TYPE=dpdk\n"
+        data += "BIND_INT=" + bind_interface + "\n"
+        self.contrail_vrouter_dpdk = contrail_vrouter_dpdk
+        self.contrail_vrouter_dpdk_data[contrail_vrouter_dpdk.name] \
+            = data
+        if contrail_vrouter_dpdk.routes:
+            self._add_routes(contrail_vrouter_dpdk.name,
+                             contrail_vrouter_dpdk.routes)
 
     def generate_ivs_config(self, ivs_uplinks, ivs_interfaces):
         """Generate configuration content for ivs."""
@@ -776,6 +803,7 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         restart_linux_teams = []
         restart_vpp = False
         restart_contrail_vrouter = False
+        restart_contrail_vrouter_dpdk = False
         update_files = {}
         all_file_names = []
         ivs_uplinks = []  # ivs physical uplinks
@@ -785,8 +813,10 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         stop_dhclient_interfaces = []
         ovs_needs_restart = False
         vpp_interfaces = self.vpp_interface_data.values()
-        contrail_vrouter_interfaces = \
-            self.contrail_vrouter_interface_data.values()
+        contrail_vrouters = \
+            self.contrail_vrouter_data.values()
+        contrail_vrouters_dpdk = \
+            self.contrail_vrouter_dpdk_data.values()
 
         for interface_name, iface_data in self.interface_data.items():
             route_data = self.route_data.get(interface_name, '')
@@ -998,7 +1028,32 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         # Contrail vRouter interfaces are handled similarly to Ethernet
         # interfaces
         for interface_name, iface_data in \
-            self.contrail_vrouter_interface_data.items():
+            self.contrail_vrouter_data.items():
+            route_data = self.route_data.get(interface_name, '')
+            route6_data = self.route6_data.get(interface_name, '')
+            interface_path = self.root_dir + ifcfg_config_path(interface_name)
+            route_path = self.root_dir + route_config_path(interface_name)
+            route6_path = self.root_dir + route6_config_path(interface_name)
+            all_file_names.append(interface_path)
+            all_file_names.append(route_path)
+            all_file_names.append(route6_path)
+            all_file_names.append(route6_path)
+            if (utils.diff(interface_path, iface_data) or
+                    utils.diff(route_path, route_data) or
+                    utils.diff(route6_path, route6_data)):
+                restart_interfaces.append(interface_name)
+                restart_interfaces.extend(self.child_members(interface_name))
+                update_files[interface_path] = iface_data
+                update_files[route_path] = route_data
+                update_files[route6_path] = route6_data
+            else:
+                logger.info('No changes required for vRouter iface: %s' %
+                            interface_name)
+
+        # Contrail vRouter interfaces are handled similarly to Ethernet
+        # interfaces
+        for interface_name, iface_data in \
+            self.contrail_vrouter_dpdk_data.items():
             route_data = self.route_data.get(interface_name, '')
             route6_data = self.route6_data.get(interface_name, '')
             interface_path = self.root_dir + ifcfg_config_path(interface_name)
@@ -1058,8 +1113,11 @@ class IfcfgNetConfig(os_net_config.NetConfig):
             for vpp_interface in vpp_interfaces:
                 self.ifdown(vpp_interface.name)
 
-            for contrail_vrouter_interface in contrail_vrouter_interfaces:
-                self.ifdown(contrail_vrouter_interface)
+            for contrail_vrouter in contrail_vrouters:
+                self.ifdown(contrail_vrouter)
+
+            for contrail_vrouter_dpdk in contrail_vrouters_dpdk:
+                self.ifdown(contrail_vrouter_dpdk)
 
             for oldname, newname in self.renamed_interfaces.items():
                 self.ifrename(oldname, newname)
@@ -1152,7 +1210,11 @@ class IfcfgNetConfig(os_net_config.NetConfig):
 
                 if restart_contrail_vrouter:
                     logger.info('Restarting Contrail Vrouter')
-                    utils.restart_contrail_vrouter(contrail_vrouter_interfaces)
+                    utils.restart_contrail_vrouter(contrail_vrouters)
+
+                if restart_contrail_vrouter_dpdk:
+                    logger.info('Restarting Contrail DPDK Vrouter')
+                    utils.restart_contrail_vrouter_dpdk(contrail_vrouters_dpdk)
 
             if self.errors:
                 message = 'Failure(s) occurred when applying configuration'

@@ -5,5 +5,5 @@ network_config:
     members:
       -
         type: interface
-        name: em3
+        name: nic1
     mtu: 1500

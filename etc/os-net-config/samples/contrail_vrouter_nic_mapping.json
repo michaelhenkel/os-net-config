@@ -1,11 +1,11 @@
 { "network_config": [
     {
-        "type": "contrail_vrouter_dpdk",
+        "type": "contrail_vrouter",
         "name": "vhost0",
         "members": [
             {
                 "type": "interface",
-                "name": "em3"
+                "name": "nic1"
             }
         ],
         "mtu": 1500

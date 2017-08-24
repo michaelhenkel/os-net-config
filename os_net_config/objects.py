@@ -75,8 +75,10 @@ def object_from_json(json):
         return OvsDpdkBond.from_json(json)
     elif obj_type == "vpp_interface":
         return VppInterface.from_json(json)
-    elif obj_type == "contrail_vrouter_interface":
-        return ContrailVrouterInterface.from_json(json)
+    elif obj_type == "contrail_vrouter":
+        return ContrailVrouter.from_json(json)
+    elif obj_type == "contrail_vrouter_dpdk":
+        return ContrailVrouterDpdk.from_json(json)
 
 
 def _get_required_field(json, name, object_name):
@@ -120,7 +122,8 @@ def _mapped_nics(nic_mapping=None):
     if _MAPPED_NICS:
         return _MAPPED_NICS
     _MAPPED_NICS = {}
-
+    with open('/tmp/logger', 'w') as logfile:
+        logfile.write('dada')
     if mapping:
         # If mapping file provided, nics need not be active
         available_nics = utils.ordered_available_nics()
@@ -1204,14 +1207,13 @@ class VppInterface(_BaseOpts):
                             options=options)
 
 
-class ContrailVrouterInterface(_BaseOpts):
+class ContrailVrouter(_BaseOpts):
     """Base class for Contrail Interface.
 
     Contrail Vrouter is the interface transporting traffic for the Contrail
     SDN Controller.
 
     The following parameters can be specified in addition to base Interface:
-      - dpdk: Switches from kernel mode to dpdk
       - bind_int: Interface vhost0 is bound to
       - options: Interface options
     """
@@ -1219,10 +1221,10 @@ class ContrailVrouterInterface(_BaseOpts):
                  routes=None, mtu=None, primary=False, nic_mapping=None,
                  persist_mapping=False, defroute=True, dhclient_args=None,
                  dns_servers=None, nm_controlled=False, onboot=True,
-                 dpdk=False, bind_int=None, options=None):
+                 members=None, options=None):
         addresses = addresses or []
 
-        super(ContrailVrouterInterface, self).__init__(name, use_dhcp,
+        super(ContrailVrouter, self).__init__(name, use_dhcp,
                                                        use_dhcpv6,
                                                        addresses,
                                                        routes, mtu, primary,
@@ -1232,11 +1234,13 @@ class ContrailVrouterInterface(_BaseOpts):
                                                        dns_servers,
                                                        nm_controlled, onboot)
         mapped_nic_names = _mapped_nics(nic_mapping)
-        if bind_int in mapped_nic_names:
-            self.bind_int = mapped_nic_names[bind_int]
+        if len(members) == 1:
+            if members[0].name in mapped_nic_names:
+                members[0].name = mapped_nic_names[members[0].name]
         else:
-            self.bind_int = bind_int
-        self.dpdk = dpdk
+            msg = 'vRouter Port should have only interface member'
+            raise InvalidConfigException(msg)
+        self.members = members or []
         self.options = options
         # pci_dev contains pci address for the interface, it will be populated
         # when interface is added to config object. It will be determined
@@ -1244,12 +1248,128 @@ class ContrailVrouterInterface(_BaseOpts):
 
     @staticmethod
     def from_json(json):
-        name = _get_required_field(json, 'name', 'ContrailVrouterInterface')
-        bind_int = _get_required_field(json, 'bind_int',
-                                       'ContrailVrouterInterface')
-        dpdk = json.get('dpdk', False)
+        name = _get_required_field(json, 'name', 'ContrailVrouter')
+        (use_dhcp, use_dhcpv6, addresses, routes, mtu, primary, nic_mapping,
+         persist_mapping, defroute, dhclient_args,
+         dns_servers, nm_controlled,
+         onboot) = _BaseOpts.base_opts_from_json(json)
+        mapped_nic_names = _mapped_nics(nic_mapping)
+        # members
+        members = []
+        members_json = json.get('members')
+        if members_json:
+            if isinstance(members_json, list):
+                if len(members_json) == 1:
+                    member = members_json[0]
+                    if not member.get('nic_mapping'):
+                        member.update({'nic_mapping': nic_mapping})
+                    member.update({'persist_mapping': persist_mapping})
+                    iface = object_from_json(member)
+                    if isinstance(iface, Interface):
+                        # TODO(skramaja): Add checks for IP and route not to
+                        # be set in the interface part of DPDK Port
+                        if nic_mapping:
+                            if iface.name in nic_mapping:
+                                iface.name = nic_mapping[iface.name]
+                        members.append(iface)
+                    else:
+                        msg = 'vRouter Port should have only interface \
+                               member'
+                        raise InvalidConfigException(msg)
+                else:
+                    msg = 'vRouter Port should have only one member'
+                    raise InvalidConfigException(msg)
+            else:
+                msg = 'Members must be a list.'
+                raise InvalidConfigException(msg)
+        else:
+            msg = 'vRouter Port should have one member as Interface'
+            raise InvalidConfigException(msg)
         options = json.get('options', '')
 
         opts = _BaseOpts.base_opts_from_json(json)
-        return ContrailVrouterInterface(name, *opts, bind_int=bind_int,
-                                        dpdk=dpdk, options=options)
+        return ContrailVrouter(name, *opts, members=members, options=options)
+
+
+class ContrailVrouterDpdk(_BaseOpts):
+    """Base class for Contrail DPDK Interface.
+
+    Contrail Vrouter is the interface transporting traffic for the Contrail
+    SDN Controller.
+
+    The following parameters can be specified in addition to base Interface:
+      - options: Interface options
+    """
+    def __init__(self, name, use_dhcp=False, use_dhcpv6=False, addresses=None,
+                 routes=None, mtu=None, primary=False, nic_mapping=None,
+                 persist_mapping=False, defroute=True, dhclient_args=None,
+                 dns_servers=None, nm_controlled=False, onboot=True,
+                 members=None, options=None):
+        addresses = addresses or []
+
+        super(ContrailVrouterDpdk, self).__init__(name, use_dhcp,
+                                                       use_dhcpv6,
+                                                       addresses,
+                                                       routes, mtu, primary,
+                                                       nic_mapping,
+                                                       persist_mapping,
+                                                       defroute, dhclient_args,
+                                                       dns_servers,
+                                                       nm_controlled, onboot)
+        mapped_nic_names = _mapped_nics(nic_mapping)
+        if len(members) == 1:
+            if members[0].name in mapped_nic_names:
+                members[0].name = mapped_nic_names[members[0].name]
+        else:
+            msg = 'vRouter DPDK Port should have only interface member'
+            raise InvalidConfigException(msg)
+        self.members = members or []
+        self.options = options
+        # pci_dev contains pci address for the interface, it will be populated
+        # when interface is added to config object. It will be determined
+        # either through ethtool or by looking up the dpdk mapping file.
+
+    @staticmethod
+    def from_json(json):
+        name = _get_required_field(json, 'name', 'ContrailVrouterDpdk')
+        options = json.get('options', '')
+
+        opts = _BaseOpts.base_opts_from_json(json)
+        (use_dhcp, use_dhcpv6, addresses, routes, mtu, primary, nic_mapping,
+         persist_mapping, defroute, dhclient_args,
+         dns_servers, nm_controlled,
+         onboot) = _BaseOpts.base_opts_from_json(json)
+        # members
+        members = []
+        members_json = json.get('members')
+        if members_json:
+            if isinstance(members_json, list):
+                if len(members_json) == 1:
+                    member = members_json[0]
+                    if not member.get('nic_mapping'):
+                        member.update({'nic_mapping': nic_mapping})
+                    member.update({'persist_mapping': persist_mapping})
+                    iface = object_from_json(member)
+                    if isinstance(iface, Interface):
+                        # TODO(skramaja): Add checks for IP and route not to
+                        # be set in the interface part of DPDK Port
+                        if nic_mapping:
+                            if iface.name in nic_mapping:
+                                iface.name = nic_mapping[iface.name]
+                        members.append(iface)
+                    else:
+                        msg = 'vRouter DPDK Port should have only interface \
+                               member'
+                        raise InvalidConfigException(msg)
+                else:
+                    msg = 'vRouter DPDK Port should have only one member'
+                    raise InvalidConfigException(msg)
+            else:
+                msg = 'Members must be a list.'
+                raise InvalidConfigException(msg)
+        else:
+            msg = 'vRouter Port should have one member as Interface'
+            raise InvalidConfigException(msg)
+
+        return ContrailVrouterDpdk(name, *opts, members=members,
+                                   options=options)

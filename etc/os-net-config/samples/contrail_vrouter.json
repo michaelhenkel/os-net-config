@@ -1,8 +1,13 @@
 { "network_config": [
     {
-        "type": "contrail_vrouter_interface",
+        "type": "contrail_vrouter",
         "name": "vhost0",
-        "bind_int": "eth1",
+        "members": [
+            {
+                "type": "interface",
+                "name": "em3"
+            }
+        ],
         "mtu": 1500
     }
   ]
