@@ -19,6 +19,7 @@ import sys
 
 import os_net_config
 from os_net_config import cli
+from os_net_config import utils
 from os_net_config import impl_ifcfg
 from os_net_config.tests import base
 import six
@@ -47,6 +48,18 @@ class TestCli(base.TestCase):
         sys.stderr.close()
         sys.stderr = orig_stderr
         return (stdout, stderr)
+
+    def stub_get_stored_pci_address(self, ifname, noop):
+        if 'eth0' in ifname:
+            return "0000:00:07.0"
+        if 'eth1' in ifname:
+            return "0000:00:08.0"
+        if 'eth2' in ifname:
+            return "0000:00:09.0"
+        if 'em3' in ifname:
+            return "0000:00:03.0"
+        if 'em1' in ifname:
+            return "0000:00:01.0"
 
     def test_bond_noop_output(self):
         bond_yaml = os.path.join(SAMPLE_BASE, 'bond.yaml')
@@ -282,16 +295,20 @@ class TestCli(base.TestCase):
     def test_contrail_vrouter_dpdk_noop_output(self):
         cvi_yaml = os.path.join(SAMPLE_BASE, 'contrail_vrouter_dpdk.yaml')
         cvi_json = os.path.join(SAMPLE_BASE, 'contrail_vrouter_dpdk.json')
+        self.stubs.Set(utils, 'get_stored_pci_address',
+                       self.stub_get_stored_pci_address)
         stdout_yaml, stderr = self.run_cli('ARG0 --provider=ifcfg --noop '
                                            '--exit-on-validation-errors '
+                                           '--debug '
                                            '-c %s' % cvi_yaml)
         self.assertEqual('', stderr)
         stdout_json, stderr = self.run_cli('ARG0 --provider=ifcfg --noop '
                                            '--exit-on-validation-errors '
+                                           '--debug '
                                            '-c %s' % cvi_json)
         self.assertEqual('', stderr)
         sanity_devices = ['DEVICE=vhost0',
-                          'BIND_INT=em3',
+                          'BIND_INT=0000:00:03.0',
                           'DEVICETYPE=vhost',
                           'TYPE=dpdk']
         for dev in sanity_devices:
@@ -303,20 +320,56 @@ class TestCli(base.TestCase):
                                 'contrail_vrouter_dpdk_nic_mapping.yaml')
         cvi_json = os.path.join(SAMPLE_BASE,
                                 'contrail_vrouter_dpdk_nic_mapping.json')
+        self.stubs.Set(utils, 'get_stored_pci_address',
+                       self.stub_get_stored_pci_address)
         mapping_file = os.path.join(SAMPLE_BASE, 'mapping.yaml')
         stdout_yaml, stderr = self.run_cli('ARG0 --provider=ifcfg --noop '
                                            '-m %s ' % mapping_file +
                                            '--exit-on-validation-errors '
+                                           '--debug '
                                            '-c %s' % cvi_yaml)
         self.assertEqual('', stderr)
         stdout_json, stderr = self.run_cli('ARG0 --provider=ifcfg --noop '
                                            '-m %s ' % mapping_file +
                                            '--exit-on-validation-errors '
+                                           '--debug '
                                            '-c %s' % cvi_json)
         self.assertEqual('', stderr)
         sanity_devices = ['DEVICE=vhost0',
-                          'BIND_INT=em3',
+                          'BIND_INT=0000:00:03.0',
                           'DEVICETYPE=vhost',
+                          'TYPE=dpdk']
+        for dev in sanity_devices:
+            self.assertIn(dev, stdout_yaml)
+        self.assertEqual(stdout_yaml, stdout_json)
+
+    def test_contrail_vrouter_dpdk_bond_nic_mapping_noop_output(self):
+        cvi_yaml = os.path.join(SAMPLE_BASE,
+                                'contrail_vrouter_dpdk_bond_nic_mapping.yaml')
+        cvi_json = os.path.join(SAMPLE_BASE,
+                                'contrail_vrouter_dpdk_bond_nic_mapping.json')
+        self.stubs.Set(utils, 'get_stored_pci_address',
+                       self.stub_get_stored_pci_address)
+        mapping_file = os.path.join(SAMPLE_BASE, 'mapping.yaml')
+        stdout_yaml, stderr = self.run_cli('ARG0 --provider=ifcfg --noop '
+                                           '-m %s ' % mapping_file +
+                                           '--exit-on-validation-errors '
+                                           '--debug '
+                                           '-c %s' % cvi_yaml)
+        self.assertEqual('', stderr)
+        stdout_json, stderr = self.run_cli('ARG0 --provider=ifcfg --noop '
+                                           '-m %s ' % mapping_file +
+                                           '--exit-on-validation-errors '
+                                           '--debug '
+                                           '-c %s' % cvi_json)
+        self.assertEqual('', stderr)
+        sanity_devices = ['DEVICE=vhost0',
+                          'BIND_INT=0000:00:03.0,0000:00:01.0',
+                          'DEVICETYPE=vhost',
+                          'BOND_MODE=2',
+                          'BOND_POLICY=802.3ad',
+                          'COREMASK=0xf',
+                          'VLAN_ID=100', 
                           'TYPE=dpdk']
         for dev in sanity_devices:
             self.assertIn(dev, stdout_yaml)

@@ -1304,7 +1304,8 @@ class ContrailVrouterDpdk(_BaseOpts):
                  routes=None, mtu=None, primary=False, nic_mapping=None,
                  persist_mapping=False, defroute=True, dhclient_args=None,
                  dns_servers=None, nm_controlled=False, onboot=True,
-                 members=None, options=None):
+                 members=None, bond_mode=None, bond_policy=None,
+                 coremask="0xf", vlan_id=None, options=None):
         addresses = addresses or []
 
         super(ContrailVrouterDpdk, self).__init__(name, use_dhcp,
@@ -1316,13 +1317,15 @@ class ContrailVrouterDpdk(_BaseOpts):
                                                        defroute, dhclient_args,
                                                        dns_servers,
                                                        nm_controlled, onboot)
+       
         mapped_nic_names = _mapped_nics(nic_mapping)
-        if len(members) == 1:
-            if members[0].name in mapped_nic_names:
-                members[0].name = mapped_nic_names[members[0].name]
-        else:
-            msg = 'vRouter DPDK Port should have only interface member'
-            raise InvalidConfigException(msg)
+        for member_int in members:
+            if member_int.name in mapped_nic_names:
+                member_int.name = mapped_nic_names[member_int.name]
+        self.bond_mode = bond_mode
+        self.bond_policy = bond_policy
+        self.coremask = coremask
+        self.vlan_id = vlan_id
         self.members = members or []
         self.options = options
         # pci_dev contains pci address for the interface, it will be populated
@@ -1333,6 +1336,12 @@ class ContrailVrouterDpdk(_BaseOpts):
     def from_json(json):
         name = _get_required_field(json, 'name', 'ContrailVrouterDpdk')
         options = json.get('options', '')
+        bond_mode = json.get('bond_mode', '')
+        bond_policy = json.get('bond_policy', '')
+        coremask = json.get('coremask', '')
+        if not coremask:
+            coremask = "0xf"
+        vlan_id = json.get('vlan_id', '')
 
         opts = _BaseOpts.base_opts_from_json(json)
         (use_dhcp, use_dhcpv6, addresses, routes, mtu, primary, nic_mapping,
@@ -1344,8 +1353,8 @@ class ContrailVrouterDpdk(_BaseOpts):
         members_json = json.get('members')
         if members_json:
             if isinstance(members_json, list):
-                if len(members_json) == 1:
-                    member = members_json[0]
+                for member_int in members_json:
+                    member = member_int
                     if not member.get('nic_mapping'):
                         member.update({'nic_mapping': nic_mapping})
                     member.update({'persist_mapping': persist_mapping})
@@ -1361,9 +1370,6 @@ class ContrailVrouterDpdk(_BaseOpts):
                         msg = 'vRouter DPDK Port should have only interface \
                                member'
                         raise InvalidConfigException(msg)
-                else:
-                    msg = 'vRouter DPDK Port should have only one member'
-                    raise InvalidConfigException(msg)
             else:
                 msg = 'Members must be a list.'
                 raise InvalidConfigException(msg)
@@ -1372,4 +1378,7 @@ class ContrailVrouterDpdk(_BaseOpts):
             raise InvalidConfigException(msg)
 
         return ContrailVrouterDpdk(name, *opts, members=members,
+                                   bond_mode=bond_mode,
+                                   bond_policy=bond_policy,
+                                   coremask=coremask, vlan_id=vlan_id,
                                    options=options)

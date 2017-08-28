@@ -2,11 +2,14 @@ running=OS_STDOUT_CAPTURE=${OS_STDOUT_CAPTURE:-1} \
 OS_STDERR_CAPTURE=${OS_STDERR_CAPTURE:-1} \
 OS_TEST_TIMEOUT=${OS_TEST_TIMEOUT:-60} \
 ${PYTHON:-python} -m subunit.run discover -t ./ . --list 
-os_net_config.tests.test_cli.TestCli.test_contrail_vrouter_nic_mapping_noop_output
-os_net_config.tests.test_cli.TestCli.test_contrail_vrouter_noop_output
+#os_net_config.tests.test_cli.TestCli.test_contrail_vrouter_nic_mapping_noop_output
+#os_net_config.tests.test_cli.TestCli.test_contrail_vrouter_noop_output
 os_net_config.tests.test_cli.TestCli.test_contrail_vrouter_dpdk_noop_output
 os_net_config.tests.test_cli.TestCli.test_contrail_vrouter_dpdk_nic_mapping_noop_output
-os_net_config.tests.test_impl_ifcfg.TestIfcfgNetConfig.test_add_contrail_vrouter
-os_net_config.tests.test_impl_ifcfg.TestIfcfgNetConfig.test_add_contrail_vrouter_with_nic_mapping
+os_net_config.tests.test_cli.TestCli.test_contrail_vrouter_dpdk_bond_nic_mapping_noop_output
+#os_net_config.tests.test_impl_ifcfg.TestIfcfgNetConfig.test_add_contrail_vrouter
+#os_net_config.tests.test_impl_ifcfg.TestIfcfgNetConfig.test_add_contrail_vrouter_with_nic_mapping
 os_net_config.tests.test_impl_ifcfg.TestIfcfgNetConfig.test_add_contrail_vrouter_dpdk_interface
 os_net_config.tests.test_impl_ifcfg.TestIfcfgNetConfig.test_add_contrail_vrouter_dpdk_interface_nic_mapping
+os_net_config.tests.test_impl_ifcfg.TestIfcfgNetConfig.test_add_contrail_vrouter_dpdk_bond_interface
+os_net_config.tests.test_impl_ifcfg.TestIfcfgNetConfig.test_add_contrail_vrouter_dpdk_bond_interface_nic_mapping

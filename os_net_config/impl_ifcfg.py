@@ -366,6 +366,8 @@ class IfcfgNetConfig(os_net_config.NetConfig):
                 data += "BOOTPROTO=dhcp\n"
             elif not base_opt.addresses:
                 data += "BOOTPROTO=none\n"
+        if isinstance(base_opt, objects.ContrailVrouterDpdk):
+            base_opt.noop = self.noop
         if isinstance(base_opt, objects.Interface):
             if base_opt.ethtool_opts:
                 data += "ETHTOOL_OPTS=\"%s\"\n" % base_opt.ethtool_opts
@@ -718,18 +720,33 @@ class IfcfgNetConfig(os_net_config.NetConfig):
         :param contrail_vrouter:
            The ContrailVrouter object to add
         """
-        logger.info('adding contrail_vrouter_dpdk interface: %s'
-                    % (contrail_vrouter_dpdk.name))
-        logger.info('contrail dpdk memebers: %s' % 
-                     dir(contrail_vrouter_dpdk.members[0]))
+        if self.noop:
+            contrail_vrouter_dpdk.noop = self.noop
+        if contrail_vrouter_dpdk.noop or self.noop:
+            contrail_vrouter_dpdk.noop = True
         bind_interface_list = []
+        pci_address_list = []
         for bind_int in contrail_vrouter_dpdk.members:
             bind_interface_list.append(bind_int.name)
+            pci_address = utils.get_pci_address(bind_int.name,
+                                                contrail_vrouter_dpdk.noop)
+            if not pci_address:
+                pci_address = utils.get_stored_pci_address(bind_int.name,
+                                                contrail_vrouter_dpdk.noop)
+            pci_address_list.append(pci_address)
         bind_interface = ",".join(bind_interface_list)
+        pci_string = ",".join(pci_address_list)
         data = self._add_common(contrail_vrouter_dpdk)
         data += "DEVICETYPE=vhost\n"
         data += "TYPE=dpdk\n"
-        data += "BIND_INT=" + bind_interface + "\n"
+        data += "BIND_INT=" + pci_string + "\n"
+        if len(contrail_vrouter_dpdk.members) > 1:
+            data += "BOND_MODE=" + str(contrail_vrouter_dpdk.bond_mode) + "\n"
+            data += "BOND_POLICY=" + contrail_vrouter_dpdk.bond_policy + "\n"
+        data += "COREMASK=" + contrail_vrouter_dpdk.coremask + "\n"
+        if contrail_vrouter_dpdk.vlan_id:
+            data += "VLAN_ID=" + str(contrail_vrouter_dpdk.vlan_id) + "\n"
+        logger.info('contraiil dpdk data: %s' % data)
         self.contrail_vrouter_dpdk = contrail_vrouter_dpdk
         self.contrail_vrouter_dpdk_data[contrail_vrouter_dpdk.name] \
             = data

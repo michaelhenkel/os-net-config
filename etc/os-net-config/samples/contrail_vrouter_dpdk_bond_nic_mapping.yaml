@@ -1,0 +1,15 @@
+network_config:
+  -
+    type: contrail_vrouter_dpdk
+    name: vhost0
+    members:
+      -
+        type: interface
+        name: nic1
+      -
+        type: interface
+        name: nic2
+    mtu: 1500
+    bond_mode: 2
+    bond_policy: 802.3ad
+    vlan_id: 100

@@ -727,7 +727,20 @@ definitions:
                 items:
                   - $ref: "#/definitions/interface"
                 minItems: 1
-                maxItems: 1
+            bond_mode:
+                oneOf:
+                  - $ref: "#/definitions/string_or_param"
+                  - $ref: "#/definitions/int_or_param"
+            bond_policy:
+                oneOf:
+                  - $ref: "#/definitions/string_or_param"
+                  - $ref: "#/definitions/int_or_param"
+            coremask:
+                $ref: "#/definitions/string_or_param"
+            vlan_id:
+                oneOf:
+                  - $ref: "#/definitions/string_or_param"
+                  - $ref: "#/definitions/int_or_param"
             # common options:
             use_dhcp:
                 $ref: "#/definitions/bool_or_param"
